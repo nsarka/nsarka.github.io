@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="Counter-Strike 1.6 hackingAfter trying and failing to hack this game on and off for almost 15 years (I started playing young), I finally had enough background in C, assembly, and operating systems to">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CS 1.6 Internal Hack">
+<meta property="og:url" content="https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/index.html">
+<meta property="og:site_name" content="nsarka">
+<meta property="og:description" content="Counter-Strike 1.6 hackingAfter trying and failing to hack this game on and off for almost 15 years (I started playing young), I finally had enough background in C, assembly, and operating systems to">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://nsarka.com/images/CS-1-6-Internal-Hack/noflash.png">
+<meta property="og:image" content="https://nsarka.com/images/CS-1-6-Internal-Hack/SearchStrings.JPG">
+<meta property="og:image" content="https://nsarka.com/images/CS-1-6-Internal-Hack/getprocaddress.JPG">
+<meta property="og:image" content="https://nsarka.com/images/CS-1-6-Internal-Hack/push7pushaddrcall.JPG">
+<meta property="og:image" content="https://nsarka.com/images/CS-1-6-Internal-Hack/basehw.JPG">
+<meta property="og:image" content="https://nsarka.com/images/CS-1-6-Internal-Hack/cs16nosteam.JPG">
+<meta property="og:image" content="https://nsarka.com/images/CS-1-6-Internal-Hack/2mingwpath.JPG">
+<meta property="og:image" content="https://nsarka.com/images/CS-1-6-Internal-Hack/1make.JPG">
+<meta property="og:image" content="https://nsarka.com/images/CS-1-6-Internal-Hack/loaded.JPG">
+<meta property="article:published_time" content="2019-01-21T08:54:34.000Z">
+<meta property="article:modified_time" content="2023-08-21T03:31:38.817Z">
+<meta property="article:author" content="Nick Sarkauskas">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://nsarka.com/images/CS-1-6-Internal-Hack/noflash.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>CS 1.6 Internal Hack</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 6.3.0"></head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="Menu"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="Top" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/nsarka">Projects</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="Back to top" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="Share post" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">Previous post</span>
+      <span id="i-next" class="info" style="display:none;">Next post</span>
+      <span id="i-top" class="info" style="display:none;">Back to top</span>
+      <span id="i-share" class="info" style="display:none;">Share post</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/&text=CS 1.6 Internal Hack"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/&title=CS 1.6 Internal Hack"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/&is_video=false&description=CS 1.6 Internal Hack"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=CS 1.6 Internal Hack&body=Check out this article: https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/&title=CS 1.6 Internal Hack"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/&title=CS 1.6 Internal Hack"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/&title=CS 1.6 Internal Hack"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/&title=CS 1.6 Internal Hack"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/&name=CS 1.6 Internal Hack&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/&t=CS 1.6 Internal Hack"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Counter-Strike-1-6-hacking"><span class="toc-number">1.</span> <span class="toc-text">Counter-Strike 1.6 hacking</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Background"><span class="toc-number">1.1.</span> <span class="toc-text">Background</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Finding-the-address-of-the-engine-function-table"><span class="toc-number">1.2.</span> <span class="toc-text">Finding the address of the engine function table</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Search-for-the-string-%E2%80%9CInitialize%E2%80%9D"><span class="toc-number">1.2.1.</span> <span class="toc-text">Search for the string “Initialize”</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Dissect-what%E2%80%99s-going-on"><span class="toc-number">1.2.2.</span> <span class="toc-text">Dissect what’s going on</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Find-references-to-the-address-of-Initialize"><span class="toc-number">1.2.3.</span> <span class="toc-text">Find references to the address of Initialize</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Relative-vs-absolute-addresses"><span class="toc-number">1.2.4.</span> <span class="toc-text">Relative vs. absolute addresses</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Calculating-the-offset"><span class="toc-number">1.2.5.</span> <span class="toc-text">Calculating the offset</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Code-for-the-DLL"><span class="toc-number">1.3.</span> <span class="toc-text">Code for the DLL</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#How-to-run-the-code"><span class="toc-number">1.4.</span> <span class="toc-text">How to run the code</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Extending-the-hack"><span class="toc-number">1.5.</span> <span class="toc-text">Extending the hack</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Conclusion"><span class="toc-number">1.6.</span> <span class="toc-text">Conclusion</span></a></li></ol></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        CS 1.6 Internal Hack
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">Nick Sarkauskas</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2019-01-21T08:54:34.000Z" class="dt-published" itemprop="datePublished">2019-01-21</time>
+        
+      
+    </div>
+
+
+      
+
+      
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <h1 id="Counter-Strike-1-6-hacking"><a href="#Counter-Strike-1-6-hacking" class="headerlink" title="Counter-Strike 1.6 hacking"></a>Counter-Strike 1.6 hacking</h1><p>After trying and failing to hack this game on and off for almost 15 years (I started playing young), I finally had enough background in C, assembly, and operating systems to pull it off. I did some reading and then wrote an internal hack with some help from forum posts on unknowncheats.me.</p>
+<p>This is what final result looks like:</p>
+<p><img src="/images/CS-1-6-Internal-Hack/noflash.png" alt="No flash"></p>
+<p>It’s only a no-flashbang hack, but all of the dirty work is done. It wouldn’t be too hard to extend the hack into something like a wallhack or an aimbot.</p>
+<p>Here’s how it works and how to extend it.</p>
+<h2 id="Background"><a href="#Background" class="headerlink" title="Background"></a>Background</h2><p>An internal hack is made of two parts:</p>
+<ul>
+<li>The injector</li>
+<li>The DLL file (.so on linux)</li>
+</ul>
+<p>The injector is a program that allocates space in the target process (the game) and then calls the win32 api <code>CreateRemoteThread</code> function to start execution of the DLL file. The DLL then has access to all the game’s memory and can do whatever you want it to do granted you know how to do it.</p>
+<p>Luckily, Valve released the source code (called the sdk) to Half-Life which CS is a mod of. So we can take a look around there for hints.</p>
+<p>In the source code there’s a function called <code>Initialize</code> that takes in a pointer to <code>cl_enginefunc_t</code>.</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="type">int</span> CL_DLLEXPORT <span class="title function_">Initialize</span><span class="params">( <span class="type">cl_enginefunc_t</span> *pEnginefuncs, <span class="type">int</span> iVersion )</span></span><br><span class="line">&#123;</span><br><span class="line">        gEngfuncs = *pEnginefuncs;</span><br><span class="line"></span><br><span class="line"><span class="comment">//      RecClInitialize(pEnginefuncs, iVersion);</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (iVersion != CLDLL_INTERFACE_VERSION)</span><br><span class="line">                <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">        <span class="built_in">memcpy</span>(&amp;gEngfuncs, pEnginefuncs, <span class="keyword">sizeof</span>(<span class="type">cl_enginefunc_t</span>));</span><br><span class="line"></span><br><span class="line">        EV_HookEvents();</span><br><span class="line">        CL_LoadParticleMan();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// get tracker interface, if any</span></span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Great–what is <code>cl_enginefunc_t</code>?</p>
+<p>Doing a quick search in the sdk comes up with:</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">// Pointers to the exported engine functions themselves</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">cl_enginefuncs_s</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">	pfnEngSrc_pfnSPR_Load_t					pfnSPR_Load;</span><br><span class="line">	pfnEngSrc_pfnSPR_Frames_t				pfnSPR_Frames;</span><br><span class="line">	pfnEngSrc_pfnSPR_Height_t				pfnSPR_Height;</span><br><span class="line">	pfnEngSrc_GetWindowCenterX_t			GetWindowCenterX;</span><br><span class="line">	pfnEngSrc_GetWindowCenterY_t			GetWindowCenterY;</span><br><span class="line">	pfnEngSrc_GetViewAngles_t				GetViewAngles;</span><br><span class="line">	pfnEngSrc_SetViewAngles_t				SetViewAngles;</span><br><span class="line">	pfnEngSrc_GetMaxClients_t				GetMaxClients;</span><br><span class="line">	pfnEngSrc_Cvar_SetValue_t				Cvar_SetValue;</span><br><span class="line">	pfnEngSrc_Cmd_Argc_t					Cmd_Argc;</span><br><span class="line">	pfnEngSrc_Cmd_Argv_t					Cmd_Argv;</span><br><span class="line">	pfnEngSrc_Con_Printf_t					Con_Printf;</span><br><span class="line">	pfnEngSrc_Con_DPrintf_t					Con_DPrintf;</span><br><span class="line">	pfnEngSrc_Con_NPrintf_t					Con_NPrintf;</span><br><span class="line">	pfnEngSrc_Con_NXPrintf_t				Con_NXPrintf;</span><br><span class="line">	pfnEngSrc_PhysInfo_ValueForKey_t		PhysInfo_ValueForKey;</span><br><span class="line">	pfnEngSrc_ServerInfo_ValueForKey_t		ServerInfo_ValueForKey;</span><br><span class="line">	pfnEngSrc_GetClientMaxspeed_t			GetClientMaxspeed;</span><br><span class="line">	pfnEngSrc_CheckParm_t					CheckParm;</span><br><span class="line">	pfnEngSrc_Key_Event_t					Key_Event;</span><br><span class="line">	pfnEngSrc_GetMousePosition_t			GetMousePosition;</span><br><span class="line">	pfnEngSrc_IsNoClipping_t				IsNoClipping;</span><br><span class="line">	pfnEngSrc_GetLocalPlayer_t				GetLocalPlayer;</span><br><span class="line">	pfnEngSrc_GetViewModel_t				GetViewModel;</span><br><span class="line">	pfnEngSrc_GetEntityByIndex_t			GetEntityByIndex;</span><br><span class="line">	pfnEngSrc_pfnGetLevelName_t				pfnGetLevelName;</span><br><span class="line">	pfnEngSrc_pfnGetScreenFade_t			pfnGetScreenFade;</span><br><span class="line">	pfnEngSrc_pfnSetScreenFade_t			pfnSetScreenFade;</span><br><span class="line">	pfnEngSrc_VGui_GetPanel_t				VGui_GetPanel;</span><br><span class="line">	pfnEngSrc_pfnServerCmdUnreliable_t		pfnServerCmdUnreliable;</span><br><span class="line">	pfnEngSrc_GetMousePos_t					pfnGetMousePos;</span><br><span class="line">	pfnEngSrc_SetMousePos_t					pfnSetMousePos;</span><br><span class="line">	pfnEngSrc_SetMouseEnable_t				pfnSetMouseEnable;</span><br><span class="line">	...</span><br><span class="line">	...</span><br><span class="line">	...</span><br><span class="line">	<span class="comment">// And a lot more</span></span><br><span class="line">&#125; <span class="type">cl_enginefunc_t</span>;</span><br></pre></td></tr></table></figure>
+
+<p>This is the game’s engine function table.</p>
+<p>If we can find where the <code>Initialize</code> function is in memory with a debugger, we can actually use this struct in our dll by reading the function’s parameters as they’re passed, and then creating our own <code>cl_enginefunc_t</code> pointer and setting it to the address we find.</p>
+<p>This is super important because it means we have a way to call these game engine functions–functions like <code>Con_Printf</code> and <code>pfnSetScreenFade</code> which I used to make the no flash hack–inside the dll which we inject.</p>
+<h2 id="Finding-the-address-of-the-engine-function-table"><a href="#Finding-the-address-of-the-engine-function-table" class="headerlink" title="Finding the address of the engine function table"></a>Finding the address of the engine function table</h2><p>Doing the debugging to actually find the engine function table is the real legwork. I use x64dbg instead of OllyDbg because it’s just a tiny bit more colorful and has a decompiler option to convert assembly instructions to C code. I also like the “Time wasted debugging” feature that counts how long you’ve spent debugging the program.</p>
+<p>After reading some forum posts on unknowncheats.me, I found a guide that spells everything out.</p>
+<p>So, what needs to be done, in order, is:</p>
+<h3 id="Search-for-the-string-“Initialize”"><a href="#Search-for-the-string-“Initialize”" class="headerlink" title="Search for the string “Initialize”"></a>Search for the string “Initialize”</h3><p>Use the references tab and search for Initialize in hw.dll</p>
+<p><img src="/images/CS-1-6-Internal-Hack/SearchStrings.JPG" alt="Search for strings in x64dbg"></p>
+<h3 id="Dissect-what’s-going-on"><a href="#Dissect-what’s-going-on" class="headerlink" title="Dissect what’s going on"></a>Dissect what’s going on</h3><p><img src="/images/CS-1-6-Internal-Hack/getprocaddress.JPG" alt="GetProcAddress"></p>
+<ol>
+<li>The address of <code>GetProcAddress</code> is moved into esi and then called</li>
+</ol>
+<p><code>GetProcAddress</code> takes in a module and a string which is the name of a function that you want it to return the address of. In this case, hw.dll wants the <code>Initialize</code> function that’s exported from client.dll.</p>
+<ol start="2">
+<li><code>test eax, eax</code></li>
+</ol>
+<p>If it can’t find it, it prints “could not link client.dll function Initialize”. If it found it, it moves the result from <code>eax</code> (Remember: return values are put into eax) into a place in memory.</p>
+<p>Awesome, that’s the address of <code>Initialize</code>. Now we need to find where <code>Initialize</code> is used so we can see its parameters being passed and therefore find the engine function table. Luckily, with its address doing this is easy.</p>
+<h3 id="Find-references-to-the-address-of-Initialize"><a href="#Find-references-to-the-address-of-Initialize" class="headerlink" title="Find references to the address of Initialize"></a>Find references to the address of Initialize</h3><p>Right clicking the address and hitting “search for references to selected address” gives a few results, but luckily the first one is the one we need. Double-clicking on it gives us this:</p>
+<p><img src="/images/CS-1-6-Internal-Hack/push7pushaddrcall.JPG" alt="x64dbg"></p>
+<p>By default, arguments are passed via the stack in reverse order. The highlighted section shows the version (<code>7</code>) first being pushed, then the address to the engine function table being pushed next (<code>hw.4C56A98</code>).</p>
+<p>THIS is the money right here. Address 0x4C56A98 is the relative address of the engine function table.</p>
+<p>All that needs to be done is to find a way to reference this address in the dll we write. In other words, we have to find an absolute address.</p>
+<h3 id="Relative-vs-absolute-addresses"><a href="#Relative-vs-absolute-addresses" class="headerlink" title="Relative vs. absolute addresses"></a>Relative vs. absolute addresses</h3><p>An absolute address is an address that won’t change the next time we run the game. The above address will change with each run because it really takes the form of<br>hw.dll+engfunc_table_offset.</p>
+<p>When the game runs, the operating system first loads the executable and then loads each .dll file that the game requires. The spot in memory where they get put isn’t the same every time–it’s up to the OS. The catch is that all the code and data structures inside of each dll will stay the same distance away from the assigned base in memory. So the “offset” won’t change unless the game developers recompile the game with changes to the code.</p>
+<p>The solution is to get the base address of hw.dll through x64dbg. Then we can calculate the offset.</p>
+<h3 id="Calculating-the-offset"><a href="#Calculating-the-offset" class="headerlink" title="Calculating the offset"></a>Calculating the offset</h3><p>We can find the base address of hw.dll by looking at the symbols tab in x64dbg:</p>
+<p><img src="/images/CS-1-6-Internal-Hack/basehw.JPG"></p>
+<p>The base of hw.dll is 0x04AF0000.</p>
+<p>The offset to the game engine function table from hw.dll (the module where it lives) is:</p>
+<p><code>0x4C56A98 (address we found) - 0x04AF0000 (base of hw.dll) = 0x00166A98</code></p>
+<p>and voila! All we need to do then is use <code>GetModuleHandle</code> to find the base of <code>hw.dll</code> when the game runs and then add this number to it and then we’ll have a working pointer to the game engine function table.</p>
+<h2 id="Code-for-the-DLL"><a href="#Code-for-the-DLL" class="headerlink" title="Code for the DLL"></a>Code for the DLL</h2><figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;SDK.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">cl_enginefunc_t</span> *pEnginefuncs = <span class="literal">NULL</span>;</span><br><span class="line"><span class="type">cl_enginefunc_t</span> gEngfuncs;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">Thread</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">    DWORD dwHWDLL = (DWORD)GetModuleHandle(<span class="string">&quot;hw.dll&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(!dwHWDLL) &#123;</span><br><span class="line">        MessageBox(<span class="literal">NULL</span>, <span class="string">&quot;Cant find hw.dll&quot;</span>, <span class="string">&quot;Cant find hw.dll&quot;</span>, MB_OK);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">https://www.unknowncheats.me/forum/counterstrike-1-5-1-6-and-mods/125661-cs1-6-finding-offsets.html</span></span><br><span class="line"><span class="comment">0494833F | 6A 07                    | push 0x7                                                   |</span></span><br><span class="line"><span class="comment">04948341 | 68 986AA904              | push hw.4A96A98                                            |</span></span><br><span class="line"><span class="comment">04948346 | FF15 20E3B205            | call dword ptr ds:[&lt;&amp;Initialize&gt;]                          |</span></span><br><span class="line"><span class="comment">        0x00166A98 (offset of engine) = 0x4A96A98 - hw.dll base (0x04930000)</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line">    pEnginefuncs = (<span class="type">cl_enginefunc_t</span>*)(dwHWDLL + <span class="number">0x00166A98</span>); <span class="comment">// first argument of dllexport Initialize in client.dll</span></span><br><span class="line">    <span class="built_in">memcpy</span>(&amp;gEngfuncs, pEnginefuncs, <span class="keyword">sizeof</span>(<span class="type">cl_enginefunc_t</span>));</span><br><span class="line"></span><br><span class="line">    gEngfuncs.Con_Printf(<span class="string">&quot;Hack loaded\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span>(<span class="literal">true</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">//cl_entity_t *player = gEngfuncs.GetLocalPlayer();</span></span><br><span class="line">        <span class="comment">//gEngfuncs.Con_Printf(&quot;x: %f y: %f z: %f\n&quot;, player-&gt;origin[0], player-&gt;origin[1], player-&gt;origin[2]);</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        <span class="comment">// No flash</span></span><br><span class="line">        <span class="type">screenfade_t</span> fade;</span><br><span class="line">        gEngfuncs.pfnGetScreenFade(&amp;fade);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span>(fade.fadealpha &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            fade.fadealpha = <span class="number">30</span>; <span class="comment">// set to 30 but for some reason it gets rid of the flash entirely.. i&#x27;m not complaining</span></span><br><span class="line">            gEngfuncs.pfnSetScreenFade(&amp;fade);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">BOOL WINAPI <span class="title function_">DllMain</span><span class="params">(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">switch</span>(fdwReason)</span><br><span class="line">    &#123;</span><br><span class="line">    <span class="keyword">case</span> DLL_PROCESS_ATTACH:</span><br><span class="line"></span><br><span class="line">        CreateThread(<span class="literal">NULL</span>,<span class="literal">NULL</span>,(LPTHREAD_START_ROUTINE)Thread,<span class="literal">NULL</span>,<span class="literal">NULL</span>,<span class="literal">NULL</span>);</span><br><span class="line">        <span class="comment">//MessageBox(NULL, &quot;Hack.dll: injected&quot;, &quot;Injection&quot;, MB_OK);</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="How-to-run-the-code"><a href="#How-to-run-the-code" class="headerlink" title="How to run the code"></a>How to run the code</h2><p>The full code is on my Github <a target="_blank" rel="noopener" href="https://github.com/nsarka/cs-internal-hack">here</a>.</p>
+<p>I used a non-steam version of CS 1.6. Shameful, I know. I just don’t want any hacking tools anywhere near my 15 year old steam account. I do NOT want to get vac banned (oh yeah, this hack is definitely detected).</p>
+<p><img src="/images/CS-1-6-Internal-Hack/cs16nosteam.JPG" alt="No steam CS"></p>
+<p>You can download a copy <a target="_blank" rel="noopener" href="https://www.rampage.us.lt/cs-1-6-non-steam.html">here</a>.</p>
+<p>I also used <a target="_blank" rel="noopener" href="http://www.mingw.org/">MinGW</a> and <a target="_blank" rel="noopener" href="http://git-scm.com/">Git SCM</a> for the C++ compiler and linux command-line on Windows, respectively.</p>
+<p>The steps are:</p>
+<ol>
+<li>Download MinGW, run the setup and get all of the basic stuff</li>
+<li>Download Git SCM for the command line</li>
+<li>Add your msys mingw folder to your path on the command line</li>
+</ol>
+<p><img src="/images/CS-1-6-Internal-Hack/2mingwpath.JPG" alt="Mingw path"></p>
+<ol start="4">
+<li>Clone the full code: <code>git clone https://github.com/nsarka/cs-internal-hack.git</code></li>
+<li>Run <code>cd cs-internal-hack</code></li>
+<li>Run <code>make</code></li>
+</ol>
+<p><img src="/images/CS-1-6-Internal-Hack/1make.JPG" alt="make"></p>
+<ol start="7">
+<li>Run the game, then go into the injector folder and run the injector as administrator</li>
+</ol>
+<p>If it worked, you should see “Hack Loaded” print into the console.</p>
+<p><img src="/images/CS-1-6-Internal-Hack/loaded.JPG" alt="Hack loaded"></p>
+<h2 id="Extending-the-hack"><a href="#Extending-the-hack" class="headerlink" title="Extending the hack"></a>Extending the hack</h2><p>At this point it shouldn’t be too bad. You can take a look at the actual <code>cl_enginefunc_t</code> struct to see what engine functions are available to you, and if that isn’t enough you can also use this same method to find some other function table structures. There is the export table, the studio and the interface. Read about how to find them <a target="_blank" rel="noopener" href="https://www.unknowncheats.me/forum/counterstrike-1-5-1-6-and-mods/125661-cs1-6-finding-offsets.html">here</a>.</p>
+<h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><p>I can’t say that was all my original work–far from it. The people at unknowncheats.me have been doing this for years so I have to thank them for posting their findings. Without it this would’ve been a months long ordeal since reverse engineering is the most time consuming part.</p>
+<p>It was pretty fun to do this type of research and even more fun to actually get things working. I probably crashed the game 20-30 times trying to get the offsets right.</p>
+<p>If anybody is interested or needs help running this my email is <a href="mailto:nsarka00@gmail.com">nsarka00@gmail.com</a>. I’ll reply within a day.</p>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">Home</a></li>
+        
+          <li><a href="/about/">About</a></li>
+        
+          <li><a href="/archives/">Writing</a></li>
+        
+          <li><a target="_blank" rel="noopener" href="http://github.com/nsarka">Projects</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Counter-Strike-1-6-hacking"><span class="toc-number">1.</span> <span class="toc-text">Counter-Strike 1.6 hacking</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Background"><span class="toc-number">1.1.</span> <span class="toc-text">Background</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Finding-the-address-of-the-engine-function-table"><span class="toc-number">1.2.</span> <span class="toc-text">Finding the address of the engine function table</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Search-for-the-string-%E2%80%9CInitialize%E2%80%9D"><span class="toc-number">1.2.1.</span> <span class="toc-text">Search for the string “Initialize”</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Dissect-what%E2%80%99s-going-on"><span class="toc-number">1.2.2.</span> <span class="toc-text">Dissect what’s going on</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Find-references-to-the-address-of-Initialize"><span class="toc-number">1.2.3.</span> <span class="toc-text">Find references to the address of Initialize</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Relative-vs-absolute-addresses"><span class="toc-number">1.2.4.</span> <span class="toc-text">Relative vs. absolute addresses</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Calculating-the-offset"><span class="toc-number">1.2.5.</span> <span class="toc-text">Calculating the offset</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Code-for-the-DLL"><span class="toc-number">1.3.</span> <span class="toc-text">Code for the DLL</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#How-to-run-the-code"><span class="toc-number">1.4.</span> <span class="toc-text">How to run the code</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Extending-the-hack"><span class="toc-number">1.5.</span> <span class="toc-text">Extending the hack</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Conclusion"><span class="toc-number">1.6.</span> <span class="toc-text">Conclusion</span></a></li></ol></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/&text=CS 1.6 Internal Hack"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/&title=CS 1.6 Internal Hack"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/&is_video=false&description=CS 1.6 Internal Hack"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=CS 1.6 Internal Hack&body=Check out this article: https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/&title=CS 1.6 Internal Hack"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/&title=CS 1.6 Internal Hack"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/&title=CS 1.6 Internal Hack"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/&title=CS 1.6 Internal Hack"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/&name=CS 1.6 Internal Hack&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://nsarka.com/2019/01/21/CS-1-6-Internal-Hack/&t=CS 1.6 Internal Hack"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> Menu</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> TOC</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> Share</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> Top</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2019-2023
+    Nick Sarkauskas
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">Home</a></li><!--
+     --><!--
+       --><li><a href="/about/">About</a></li><!--
+     --><!--
+       --><li><a href="/archives/">Writing</a></li><!--
+     --><!--
+       --><li><a target="_blank" rel="noopener" href="http://github.com/nsarka">Projects</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"Copy to clipboard!\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "Copied!");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
