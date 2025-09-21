@@ -1,0 +1,4 @@
+[submodule "nsarka/themes/congo"]
+	path = nsarka/themes/congo
+	url = https://github.com/jpanther/congo.git
+	branch = stable
