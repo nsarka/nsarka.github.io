@@ -5,7 +5,7 @@ set -x
 cd nsarka
 hugo
 cd ..
-mv nsarka/public ./public
-echo Public folder created, deploy it to master with ./publish.sh
+mv nsarka/public ./to_publish
+echo ./to_publish folder created, deploy it to master with ./publish.sh
 
 set +x
