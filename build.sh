@@ -5,6 +5,6 @@ set -x
 cd nsarka
 hugo
 cd ..
-cp -r nsarka/public ./public
+mv nsarka/public ./public
 
 set +x
