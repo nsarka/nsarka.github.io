@@ -10,7 +10,7 @@ echo "nsarka.com" > /tmp/to_publish/CNAME
 git checkout master
 
 # Remove everything
-rm -rf .
+rm -rf ./*
 
 # Move in the new files to publish
 mv /tmp/to_publish/* ./
