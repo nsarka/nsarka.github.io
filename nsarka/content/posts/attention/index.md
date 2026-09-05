@@ -2,6 +2,8 @@
 date = '2026-05-15T08:54:34.000Z'
 draft = false
 title = 'Notes on Transformers'
+thumbnailFit = true
+thumbnailAlt = 'Multihead attention. Operations are purple, given tensors are green. Each head is its own box.'
 +++
 
 {{< katex >}}
