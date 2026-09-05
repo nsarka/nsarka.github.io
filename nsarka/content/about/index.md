@@ -12,4 +12,4 @@ Previously, he was concurrently an [M.S. student](https://nowlab.cse.ohio-state.
 
 ## Note on AI use
 
-While I use AI tools for LaTeX formatting and writing code (even for updating this site), all text you can *see* here is completely human written. Same with the diagrams--those are usually created using the wonderful[Excalidraw](https://excalidraw.com/) tool. In my opinion doing it this way adds authenticity.
+While I use AI tools for LaTeX formatting and writing code (even for updating this site), all text you can *see* here is completely human written. Same with the diagrams--those are usually created using the wonderful [Excalidraw](https://excalidraw.com/) tool. In my opinion doing it this way adds authenticity.

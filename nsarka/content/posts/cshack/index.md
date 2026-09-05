@@ -2,6 +2,7 @@
 date = '2019-01-21T08:54:34.000Z'
 draft = false
 title = 'Counter-Strike 1.6 Hacking'
+summary = 'Learning how to hack CS 1.6'
 +++
 
 ## Introduction
