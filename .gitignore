@@ -3,3 +3,4 @@ nsarka/public/*
 nsarka/resources/*
 public/
 to_publish/*
+.hugo_build.lock
