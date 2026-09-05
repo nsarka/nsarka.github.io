@@ -1,4 +1,20 @@
-# Publishing the site
+# Nick Sarkauskas's blog
+
+This repository contains the source for [nsarka.com](https://nsarka.com/),
+Nick Sarkauskas's personal blog about systems, networking, and AI. Posts
+include technical walkthroughs, diagrams, and notes from learning how things work.
+
+Read the posts on the [website](https://nsarka.com/posts/), or explore their
+Markdown source and accompanying images in `nsarka/content/posts/`.
+The `sources/` folder holds editable Excalidraw drawings and other source
+materials used to create posts.
+
+The site is built with Hugo and the Congo theme, and hosted on GitHub Pages.
+`nsarka/` contains the Hugo project; `docs/` contains the generated website.
+
+## Publishing the site
+
+Personal notes for maintaining and publishing this blog.
 
 The `master` branch contains the Hugo source in `nsarka/` and the generated
 website in `docs/`. Install Hugo Extended and Go before building.
