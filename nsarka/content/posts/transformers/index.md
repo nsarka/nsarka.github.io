@@ -314,8 +314,6 @@ Then continue on, with each transformer layer storing its own KV-cache like this
 
 Since the model is *autoregressive*, each new token gets added to the context and the whole process repeats with it. However, the key insight behind KV-caching is that you only need to compute a single new row in the attention matrices:
 
-[insert excalidraw image here]
-
 Here's the flow:
 
 $$
