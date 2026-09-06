@@ -1,5 +1,5 @@
 +++
-date = '2026-05-15T08:54:34.000Z'
+date = '2026-09-05T08:54:34.000Z'
 draft = false
 title = 'Notes on Transformers'
 summary = 'Walking through the shapes of every operation in GPT-2 small, with some extras about inference'
@@ -168,13 +168,13 @@ K = x @ W_k # [B, S, D]
 V = x @ W_v # [B, S, D]
 ```
 
-Run Scaled Dot Product Attention (\(D_h\) is the hidden dimension of each head, which is defined in [Multi-Head Attention (MHA)](#multi-head-attention-mha)):
+Run Scaled Dot Product Attention (here written without multihead attention, which is defined later):
 
 ```python
 Kt = K^T # [B, D, S]
 
 scores = Q @ Kt # [B, S, S]
-scores = scores / sqrt(D_h)
+scores = scores / sqrt(D)
 ```
 
 Apply the causal mask \(m \in [S, S]\), whose upper right triangle is set to \(-\infty\). Broadcast add. The shapes are unchanged:
@@ -268,9 +268,21 @@ During training we use all \(S\) positions. Because of causal masking, each logi
   caption=`Figure 6: Multihead attention. Operations are purple, given tensors are green. Each head is its own box.`
 >}}
 
-Split \(D\) by the number of heads \(H\) to get \(D_h\), the dimension of each head. Then, for each head, train its own \(W_{q,i}\), \(W_{k,i}\), and \(W_{v,i}\) matrices each of shape \([D, D_h]\), where \(i\) is the ith attention head. Do the regular SDPA calculation on each head to get a tensor of size \([B, S, D_h]\). Right before multiplying by the final \(W_o\) projection, concatenate all head outputs back into the full \(D\) sized tensor: \([B, S, D_h] \rightarrow [B, S, H\cdot D_h] = [B, S, D]\).
+GPT-2 used MHA, but in the previous sections the shapes were made a little simpler by assuming we weren't using it. At this point though, let's add it back in. The steps to convert attention to MHA are to:
 
-The idea is each head projects the same token into a smaller \(D_h\)-dimensional query/key/value space. The attention score between two tokens is then the dot product of their \(D_h\)-dimensional query and key vectors. Different heads have different learned projections, allowing them to learn different patterns.
+- Split \(D\) by the number of heads \(H\) to get \(D_h\), the dimension of each head. In GPT-2 small, \(D_h=64\).
+
+- Then, for each head, train its own \(W_{q,i}\), \(W_{k,i}\), and \(W_{v,i}\) matrices each of shape \([D, D_h]\), where \(i\) is the ith attention head.
+
+- Do the SDPA calculation on each head--dividing the attention scores by \(\sqrt{D_h}\) instead of \(\sqrt{D}\)--to get a tensor of size \([B, S, D_h]\).
+
+- Right before multiplying by the final \(W_o\) projection, concatenate all head outputs back into the full \(D\) sized tensor: \([B, S, D_h] \rightarrow [B, S, H\cdot D_h] = [B, S, D]\).
+
+The idea is each head projects the same token into a smaller \(D_h\)-dimensional query/key/value space. The attention score between two tokens is then the dot product of their \(D_h\)-dimensional query and key vectors. Different heads have different learned projections, allowing them to learn different patterns. Figure 6 above illustrates the new flow.
+
+{{< alert "circle-info" >}}
+**Note:** Going forward, we'll disable MHA, so back to dividing by \(\sqrt{D}\) instead of \(\sqrt{D_h}\) after this section.
+{{< /alert >}}
 
 ## Inference with KV-Caching
 
@@ -305,7 +317,7 @@ V_cached = V
 Run attention normally:
 
 ```python
-softmax((Q @ K.T) / sqrt(D_h)) @ V [B, S, D]
+softmax((Q @ K.T) / sqrt(D)) @ V [B, S, D]
 ```
 
 Then continue on, with each transformer layer storing its own KV-cache like this one. The first token gets printed to screen.
@@ -338,7 +350,7 @@ V_cached = V_cached.append(V_new) # [B, S+1, D]
 Run attention, but this time using `K_cached` and `V_cached`:
 
 ```python
-weights = softmax((Q_new @ K_cached.T) / sqrt(D_h))
+weights = softmax((Q_new @ K_cached.T) / sqrt(D))
 ```
 
 The shapes before multiplying `V_cached` are \([B, 1, D] \mathbin{@} [B, D, S+1] = [B, 1, S+1]\). This tensor holds the attention weights of the input token over the previous tokens.
