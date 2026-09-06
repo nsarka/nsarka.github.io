@@ -2,7 +2,7 @@
 date = '2026-05-15T08:54:34.000Z'
 draft = false
 title = 'Notes on Transformers'
-summary = 'Walking through the shapes of every operation in GPT-2, with some extras about Inference'
+summary = 'Walking through the shapes of every operation in GPT-2 small, with some extras about inference'
 thumbnailFit = true
 thumbnailAlt = 'Multihead attention. Operations are purple, given tensors are green. Each head is its own box.'
 +++
@@ -35,14 +35,14 @@ The *decoder* on the right side of the image takes the full output of the encode
 
 For autoregressive language modeling the encoder is actually not necessary, so the vast majority of models released these days are **decoder-only** models. This is due to several reasons:
 
-- *Text is largely causal*: That means it can be simpler and more effective to just predict the final token in the sequence instead of masking random tokens like you do with enc-dec or enc-only
+- *Text is largely causal*: That means it can be simpler and more effective to just predict the next token in the sequence instead of masking random tokens like you do with enc-dec or enc-only
 - *Scale*: The GPT-3 paper found that scale is extremely powerful and there are distinct widths of the attention and MLP blocks required to perform more challenging tasks, as well as distinct depths so that the model can write to the residual stream enough to handle tasks like reasoning. Therefore it's often better to have a 10B decoder-only model than 5B in the encoder and 5B in the decoder
 - *Design simplicity*: It's just easier to engineer a single unified model, since separating the encoder and decoder introduces load balancing, parallelism topology complexity, and additional synchronization points.
 
 So, for the rest of this blog I will refer to their design instead of encoder-only or encoder-decoder models.
 
 {{< alert "circle-info" >}}
-**Note:** Interestingly enough, Vaswani et al didn't invent the attention mechanism, that was in [https://arxiv.org/abs/1409.0473](https://arxiv.org/abs/1409.0473 "https://arxiv.org/abs/1409.0473"). What Vaswani and team did was remove the recurrence from attention, add an MLP, and scale it up.
+**Note:** Interestingly enough, Vaswani et al didn't invent the attention mechanism, that was in [https://arxiv.org/abs/1409.0473](https://arxiv.org/abs/1409.0473 "https://arxiv.org/abs/1409.0473"). Vaswani and team removed the recurrence from attention, added multihead attention (defined later), added an MLP, added positional encodings, and scaled it all up.
 {{< /alert >}}
 
 ## The Complete Tensor Math of a Transformer
@@ -96,11 +96,11 @@ Let
 
 Here we have a direction for gender and a direction for royalty. The purple arrow shows the direction of royalty and the pink arrow shows the direction of femininity. You can start from any of the four points and add or subtract gender and royalty to get the others. What's interesting is that all of the model's knowledge is encoded in a space like this, even though it may not be as clean looking as this figure.
 
-\(V\) = "Vocabulary size", the number of different tokens there are.
+\(V_{\mathrm{vocab}}\) = "Vocabulary size", the number of different tokens there are.
 
-\(L\) = "Number of transformer layers" the model has, where each layer is a single decoder 
+\(L\) = "Number of transformer layers" the model has, where each layer is a single decoder block.
 
-Each of these are called *hyper-parameters* because they are configured by the model designer. GPT-2 had \(L = 12\), \(V = 50257\), \(S_{\mathrm{max}} = 1024\), \(D = 768\).
+Each of these are called *hyper-parameters* because they are configured by the model designer. GPT-2 small had \(L = 12\), \(V_{\mathrm{vocab}} = 50257\), \(S_{\mathrm{max}} = 1024\), \(D = 768\).
 
 ### The Flow of Tokens
 
@@ -120,7 +120,7 @@ The 3 users type their sentences, and the tokenizer converts the text string int
 **Note:** Each complete word may not actually correspond to a token ID, for example "unnecessary" might map to two tokens, un/necessary. This is the reason behind the old issue of counting the number of r's in the word strawberry.
 {{< /alert >}}
 
-The next operation operation is an embedding table with a matrix \(E \in [V, D]\) that converts the tensor from shape \([B, S]\) to shape \([B, S, D]\). The purpose of the embedding is to expand each token ID into the vector in the \(D\)-dimensional space that represents that token's meaning. **This is NOT a matrix multiplication. The operation takes in a row number and returns that row from the embedding matrix.**
+The next operation is an embedding table with a matrix \(E \in [V_{\mathrm{vocab}}, D]\) that converts the tensor from shape \([B, S]\) to shape \([B, S, D]\). The purpose of the embedding is to expand each token ID into the vector in the \(D\)-dimensional space that represents that token's meaning. **This is NOT a matrix multiplication. The operation takes in a row number and returns that row from the embedding matrix.**
 
 {{< figure
   src="Pasted image 20260905155404.png"
@@ -128,7 +128,7 @@ The next operation operation is an embedding table with a matrix \(E \in [V, D]\
   caption=`Figure 4: Converting from shape \([B, S]\) of token IDs to the \([B, S, D]\) tensor of embeddings`
 >}}
 
-Now, we have a tensor of shape \([B, S, D]\). Next is the position embedding \(P \in [S, D]\). The purpose is to encode the position of each token in the sequence. We broadcast add the position across every batch: \([B, S, D] + [S, D] = [B, S, D]\). This is helpful because the attention operation is a matrix multiply comparing every token to every other token without order, so to eventually capture that the dog is the one chasing in "the dog chased the cat", we have encode that the dog is first in the sentence inside of the dog token itself.
+Now, we have a tensor of shape \([B, S, D]\). Next is the position embedding \(P \in [S, D]\). The purpose is to encode the position of each token in the sequence. We broadcast add the position across every batch: \([B, S, D] + [S, D] = [B, S, D]\). This is helpful because the attention operation is a matrix multiply comparing every token to every other token without order, so to eventually capture that the dog is the one chasing in "the dog chased the cat", we have to encode that the dog is first in the sentence inside of the dog token itself.
 
 {{< alert "circle-info" >}}
 **Note:** In GPT-2, the learned positional embedding table is \(P_{\mathrm{table}} \in [S_{\mathrm{max}}, D]\). Each row corresponds to a position. So `P_table[0, :]` corresponds to position 0, `P_table[1, :]` position 1, ..., then for getting \(P\) we can take the slice: `P = P_table[:S, :]`, i.e., skip everything after \(S\).
@@ -168,13 +168,13 @@ K = x @ W_k # [B, S, D]
 V = x @ W_v # [B, S, D]
 ```
 
-Run Scaled Dot Product Attention:
+Run Scaled Dot Product Attention (\(D_h\) is the hidden dimension of each head, which is defined in [Multi-Head Attention (MHA)](#multi-head-attention-mha)):
 
 ```python
 Kt = K^T # [B, D, S]
 
 scores = Q @ Kt # [B, S, S]
-scores = scores / sqrt(D)
+scores = scores / sqrt(D_h)
 ```
 
 Apply the causal mask \(m \in [S, S]\), whose upper right triangle is set to \(-\infty\). Broadcast add. The shapes are unchanged:
@@ -246,17 +246,17 @@ After passing through all \(L\) transformer layers and a final LayerNorm, we get
 
 $$
 \begin{aligned}
-W_{\mathrm{vocab}} &\in [D, V] \\
+W_{\mathrm{vocab}} &\in [D, V_{\mathrm{vocab}}] \\
 \end{aligned}
 $$
 
 ```python
-logits = x @ W_vocab # [B, S, V]
+logits = x @ W_vocab # [B, S, vocab_size]
 ```
 
-Logits are the name for the raw scores of each potential token in the vocabulary. Using \(V = 50257\) means that each logits vector in the tensor has a certain score for all 50257 potential output tokens.
+Logits are the name for the raw scores of each potential token in the vocabulary. Using \(V_{\mathrm{vocab}} = 50257\) means that each logits vector in the tensor has a certain score for all 50257 potential output tokens.
 
-During inference, we just take the last \(S\): `[:, S-1:S, :]` (Python array slicing notation). This gives a \([B, 1, V]\) tensor, one prediction for every batch. Softmax across the vocabulary, and this gives a probability distribution that the model can choose from. Temperature has its influence here: before the softmax, it can scale the logits so that model may choose less probable words more often.
+During inference, we just take the last \(S\): `[:, S-1:S, :]` (Python array slicing notation). This gives a \([B, 1, V_{\mathrm{vocab}}]\) tensor, one prediction for every batch. Softmax across the vocabulary, and this gives a probability distribution that the model can choose from. Temperature has its influence here: before the softmax, it can scale the logits so that model may choose less probable words more often.
 
 During training we use all \(S\) positions. Because of causal masking, each logit predicts the next token in the sequence without being influenced by future tokens. From there we can compute the loss for every index and run backpropagation to update the model's weights.
 
@@ -305,7 +305,7 @@ V_cached = V
 Run attention normally:
 
 ```python
-softmax((Q @ K.T) / sqrt(D)) @ V [B, S, D]
+softmax((Q @ K.T) / sqrt(D_h)) @ V [B, S, D]
 ```
 
 Then continue on, with each transformer layer storing its own KV-cache like this one. The first token gets printed to screen.
@@ -338,7 +338,7 @@ V_cached = V_cached.append(V_new) # [B, S+1, D]
 Run attention, but this time using `K_cached` and `V_cached`:
 
 ```python
-weights = softmax((Q_new @ K_cached.T) / sqrt(D)) 
+weights = softmax((Q_new @ K_cached.T) / sqrt(D_h))
 ```
 
 The shapes before multiplying `V_cached` are \([B, 1, D] \mathbin{@} [B, D, S+1] = [B, 1, S+1]\). This tensor holds the attention weights of the input token over the previous tokens.
@@ -353,7 +353,7 @@ The shapes of this are \([B, 1, S+1] \mathbin{@} [B, S+1, D] = [B, 1, D]\). We'v
 
 ## Conclusion
 
-To recap: the user's input gets converted into token IDs, which get converted into a tensor of shape \([B, S, D]\). A transformer layer has an attention block which calculates \(Q\), \(K\), \(V\) matrices, applies the famous \(\operatorname{Attention} = \operatorname{softmax}\!\left(\frac{QK^{T}}{\sqrt{D}}\right)V\) equation, and then passes the result through an MLP. The process is repeated \(L\) times before a final linear produces a \([B, S, V]\) tensor over the vocabulary.
+To recap: the user's input gets converted into token IDs, which get converted into a tensor of shape \([B, S, D]\). A transformer layer has an attention block which calculates \(Q\), \(K\), \(V\) matrices, applies the famous \(\operatorname{Attention} = \operatorname{softmax}\!\left(\frac{QK^{T}}{\sqrt{D}}\right)V\) equation, and then passes the result through an MLP. The process is repeated \(L\) times before a final linear produces a \([B, S, V_{\mathrm{vocab}}]\) tensor over the vocabulary.
 
 Inference has two modes, prefill and decode. Prefill processes the entire prompt in parallel, while decode computes attention one token at a time using stored \(K\) and \(V\) matrices.
 
