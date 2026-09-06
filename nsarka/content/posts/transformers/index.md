@@ -256,6 +256,10 @@ logits = x @ W_vocab # [B, S, vocab_size]
 
 Logits are the name for the raw scores of each potential token in the vocabulary. Using \(V_{\mathrm{vocab}} = 50257\) means that each logits vector in the tensor has a certain score for all 50257 potential output tokens.
 
+{{< alert "circle-info" >}}
+**Note:** When using *embedding tying*, \(W_{\mathrm{vocab}}\) has the same weights as input embedding table: \(W_{\mathrm{vocab}} = E^{\mathsf{T}}\). This is done to save on parameter budget.
+{{< /alert >}}
+
 During inference, we just take the last \(S\): `[:, S-1:S, :]` (Python array slicing notation). This gives a \([B, 1, V_{\mathrm{vocab}}]\) tensor, one prediction for every batch. Softmax across the vocabulary, and this gives a probability distribution that the model can choose from. Temperature has its influence here: before the softmax, it can scale the logits so that model may choose less probable words more often.
 
 During training we use all \(S\) positions. Because of causal masking, each logit predicts the next token in the sequence without being influenced by future tokens. From there we can compute the loss for every index and run backpropagation to update the model's weights.
