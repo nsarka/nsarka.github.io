@@ -35,7 +35,7 @@ The *decoder* on the right side of the image takes the full output of the encode
 
 For autoregressive language modeling the encoder is actually not necessary, so the vast majority of models released these days are **decoder-only** models. This is due to several reasons:
 
-- *Text is largely casual*: That means it can be simpler and more effective to just predict the final token in the sequence instead of masking random tokens like you do with enc-dec or enc-only
+- *Text is largely causal*: That means it can be simpler and more effective to just predict the final token in the sequence instead of masking random tokens like you do with enc-dec or enc-only
 - *Scale*: The GPT-3 paper found that scale is extremely powerful and there are distinct widths of the attention and MLP blocks required to perform more challenging tasks, as well as distinct depths so that the model can write to the residual stream enough to handle tasks like reasoning. Therefore it's often better to have a 10B decoder-only model than 5B in the encoder and 5B in the decoder
 - *Design simplicity*: It's just easier to engineer a single unified model, since separating the encoder and decoder introduces load balancing, parallelism topology complexity, and additional synchronization points.
 
