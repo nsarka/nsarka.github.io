@@ -3,3 +3,13 @@
 .prose :not(pre) > code::after {
   content: none;
 }
+
+/* Give article section headings room above preceding text and note boxes. */
+.prose h1:not(:first-child) {
+  margin-top: 3rem;
+}
+
+/* Keep subheadings a little closer to the preceding paragraph. */
+.prose h2 {
+  margin-top: 1.5em;
+}

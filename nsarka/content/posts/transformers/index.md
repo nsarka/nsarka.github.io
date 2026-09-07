@@ -11,13 +11,13 @@ thumbnailAlt = 'Multihead attention. Operations are purple, given tensors are gr
 
 My personal notes that helped me understand transformers. I'm a C programmer working at the systems and networking middleware level (RDMA, collectives). However, at NVIDIA it is becoming increasingly helpful to understand LLMs--even as a networking dev--because frontier models are giant enough that the entire cluster from the hardware up to the LLM itself all needs to be co-designed to get the best performance. Even a few % reduction in latency can save a lot of money in a large scale training run.
 
-## Introduction
+# Introduction
 
 The modern AI era is huge. With investments as big as half a trillion (!) dollars coming from the [Stargate Project](https://openai.com/index/announcing-the-stargate-project/), it's hard to believe it would have been this big if the Vaswani et al paper [Attention Is all You Need](https://arxiv.org/abs/1706.03762) had not introduced the Transformer, which has become the dominant architecture for all types of models not limited to text generation.
 
 Attention is at the heart of the transformer. With that, it was worth the effort to understand it enough that I could write a blog post on it and also the rest of the transformer. This is the culmination of that effort. The rest of this post is organized as follows: [Attention in Context](#attention-in-context), [The Complete Tensor Math of a Transformer](#the-complete-tensor-math-of-a-transformer),  [Multi-Head Attention (MHA)](#multi-head-attention-mha), and [Inference with KV-Caching](#inference-with-kv-caching) which explains what Prefill and Decode are, and how KV-Caching can improve performance. Lastly, I end the post with a [Conclusion](#conclusion) and [Acknowledgements](#acknowledgements).
 
-## Attention in Context
+# Attention in Context
 
 In the [Attention Is all You Need](https://arxiv.org/abs/1706.03762) paper, they show this diagram:
 
@@ -45,13 +45,13 @@ So, for the rest of this blog I will refer to their design instead of encoder-on
 **Note:** Interestingly enough, Vaswani et al didn't invent the attention mechanism, that was in [https://arxiv.org/abs/1409.0473](https://arxiv.org/abs/1409.0473 "https://arxiv.org/abs/1409.0473"). Vaswani and team removed the recurrence from attention, added multihead attention (defined later), added an MLP, added positional encodings, and scaled it all up.
 {{< /alert >}}
 
-## The Complete Tensor Math of a Transformer
+# The Complete Tensor Math of a Transformer
 
 There are a lot of tools like [this great visualizer](https://bbycroft.net/llm "https://bbycroft.net/llm"), but for me, it didn't click until I learned how to think in terms of shapes and operations abstractly like in this post. If you continue reading and still find it confusing: look up **broadcasts**, **reductions**, and **pointwise operations** and use numpy or pytorch to come up with a few examples.
 
 For the rest of this post I'll walk through a GPT-2 style model because it's easy to digest, and because Karpathy's [minGPT](https://github.com/karpathy/minGPT) provides a very nice educational implementation that you can try immediately after reading this blog.
 
-### Writing Convention
+## Writing Convention
 
 `@` means matrix multiplication. This is actually Python's syntax.
 `#` is a comment also like in Python.
@@ -78,7 +78,7 @@ x = x @ W_2 # [M, N]
 
 The comments show the output shape of the operation. So, we multiplied \(x\) by \(W_1\), then GeLU'd it, then multiplied that by \(W_2\). The final tensor's shape is \([M, N]\).
 
-### Definitions
+## Definitions
 
 Let
 
@@ -102,11 +102,11 @@ Here we have a direction for gender and a direction for royalty. The purple arro
 
 Each of these are called *hyper-parameters* because they are configured by the model designer. GPT-2 small had \(L = 12\), \(V_{\mathrm{vocab}} = 50257\), \(S_{\mathrm{max}} = 1024\), \(D = 768\).
 
-### The Flow of Tokens
+## The Flow of Tokens
 
-Going bottom-up from figure 1 and ignoring the encoder side (decoder-only), we have the following flow of tokens with my added illustrations.
+Going bottom-up from Figure 1 and ignoring the encoder side (decoder-only), we have the following flow of tokens with my added illustrations.
 
-#### Input to Embeddings
+### Input to Embeddings
 
 {{< figure
   src="Pasted image 20260905153354.png"
@@ -114,11 +114,9 @@ Going bottom-up from figure 1 and ignoring the encoder side (decoder-only), we h
   caption=`Figure 3: Input to tokens to start of embedding`
 >}}
 
-The 3 users type their sentences, and the tokenizer converts the text string into an array of token IDs. This makes the input tensor to the model of shape \([B, S]\).
+The 3 users type their sentences, and the tokenizer (not pictured in Figure 1) converts the text string into an array of token IDs. This makes the input tensor to the model of shape \([B, S]\).
 
-{{< alert "circle-info" >}}
-**Note:** Each complete word may not actually correspond to a token ID, for example "unnecessary" might map to two tokens, un/necessary. This is the reason behind the old issue of counting the number of r's in the word strawberry.
-{{< /alert >}}
+Each complete word may not actually correspond to a token ID, for example the word "unnecessary" might map to two tokens, un/necessary. This is the reason behind the old issue of counting the number of r's in the word strawberry.
 
 The next operation is an embedding table with a matrix \(E \in [V_{\mathrm{vocab}}, D]\) that converts the tensor from shape \([B, S]\) to shape \([B, S, D]\). The purpose of the embedding is to expand each token ID into the vector in the \(D\)-dimensional space that represents that token's meaning. **This is NOT a matrix multiplication. The operation takes in a row number and returns that row from the embedding matrix.**
 
@@ -128,13 +126,15 @@ The next operation is an embedding table with a matrix \(E \in [V_{\mathrm{vocab
   caption=`Figure 4: Converting from shape \([B, S]\) of token IDs to the \([B, S, D]\) tensor of embeddings`
 >}}
 
-Now, we have a tensor of shape \([B, S, D]\). Next is the position embedding \(P \in [S, D]\). The purpose is to encode the position of each token in the sequence. We broadcast add the position across every batch: \([B, S, D] + [S, D] = [B, S, D]\). This is helpful because the attention operation is a matrix multiply comparing every token to every other token without order, so to eventually capture that the dog is the one chasing in "the dog chased the cat", we have to encode that the dog is first in the sentence inside of the dog token itself.
+### Positional Embedding
 
-{{< alert "circle-info" >}}
-**Note:** In GPT-2, the learned positional embedding table is \(P_{\mathrm{table}} \in [S_{\mathrm{max}}, D]\). Each row corresponds to a position. So `P_table[0, :]` corresponds to position 0, `P_table[1, :]` position 1, ..., then for getting \(P\) we can take the slice: `P = P_table[:S, :]`, i.e., skip everything after \(S\).
-{{< /alert >}}
+Now, we have a tensor of shape \([B, S, D]\). Next is the position embedding \(P \in [S, D]\). The purpose is to encode the position of each token in the sequence. We broadcast add the position across every batch: \([B, S, D] + [S, D] = [B, S, D]\). 
 
-#### Embeddings to Transformer Layer
+In GPT-2, the learned positional embedding table is \(P_{\mathrm{table}} \in [S_{\mathrm{max}}, D]\). Each row corresponds to a position. So `P_table[0, :]` corresponds to position 0, `P_table[1, :]` position 1, ..., then for getting \(P\) we can take the slice: `P = P_table[:S, :]`, i.e., skip everything after \(S\).
+
+This is helpful because the attention operation is a matrix multiply comparing every token to every other token without order, so to eventually capture that the dog is the one chasing in "the dog chased the cat", we have to encode that the dog is first in the sentence inside of the dog token itself.
+
+### Transformer Layer
 
 Now, we enter the transformer layer itself. The first operation is LayerNorm, but that doesn't change the shape so I won't go into detail about it here. Just know it's used to stabilize the training process.
 
@@ -240,7 +240,7 @@ mlp_out = h @ W2 # [B, S, D]
 
 Lastly, there is another residual add, which doesn't change the shape.
 
-#### Transformer Layer to Output
+### Getting the Output
 
 After passing through all \(L\) transformer layers and a final LayerNorm, we get a new tensor \(x\) with the familiar \([B, S, D]\) shape. Now, in order to get the next token prediction, we run a projection back to the vocabulary:
 
@@ -264,7 +264,7 @@ During inference, we just take the last \(S\): `[:, S-1:S, :]` (Python array sli
 
 During training we use all \(S\) positions. Because of causal masking, each logit predicts the next token in the sequence without being influenced by future tokens. From there we can compute the loss for every index and run backpropagation to update the model's weights.
 
-## Multi-Head Attention (MHA)
+# Multi-Head Attention (MHA)
 
 {{< figure
   src="Pasted image 20260905180946.png"
@@ -288,11 +288,11 @@ The idea is each head projects the same token into a smaller \(D_h\)-dimensional
 **Note:** Going forward, we'll disable MHA, so back to dividing by \(\sqrt{D}\) instead of \(\sqrt{D_h}\) after this section.
 {{< /alert >}}
 
-## Inference with KV-Caching
+# Inference with KV-Caching
 
-During inference there's two stages:
+During inference there's two stages: Prefill and Decode. Both stages without KV-caching are the same as what we've already covered. Since I found KV-caching to be really interesting, I wanted to share how it changes things here.
 
-### Prefill
+## Prefill
 
 Say you start a new chat completely fresh. On the first time you hit enter to send your prompt to the model, it computes the attention scores normally, i.e., across the full sequence length \(S\). That means every token gets compared to every other token. This is the same calculation as before:
 
@@ -326,9 +326,9 @@ softmax((Q @ K.T) / sqrt(D) + m) @ V # [B, S, D]
 
 Then continue on to the next transformer layer, with each one storing its own KV-cache like this one. The first token gets printed to screen by sampling the last \(S\)'s predicted probability distribution.
 
-### Decode
+## Decode
 
-Since the model is *autoregressive*, each new token gets added to the context and the whole process repeats with it. Without KV-caching, the decode stage is actually the same as the prefill stage, with each autoregression working with a sequence length one token longer than the last.
+Since the model is autoregressive, each new token gets added to the context and the whole process repeats with it. Without KV-caching, the decode stage is actually the same as the prefill stage, with each autoregression working with a sequence length one token longer than the last.
 However, the key insight behind KV-caching is that it makes decode only require computing a single new row in the attention matrices.
 
 Here's the flow. Instead of giving the whole sequence as an input, only the most recently generated token is given:
@@ -368,7 +368,7 @@ output = weights @ V_cached
 
 The shapes of this are \([B, 1, S+1] \mathbin{@} [B, S+1, D] = [B, 1, D]\). We've converted it back to a single token. The net effect is that we've avoided recomputing \(Q\), \(K\), \(V\), and attention outputs for all previous tokens. We compute \(Q\), \(K\), and \(V\) only for the new token, append its \(K\) and \(V\) to the cache, and compute its query against all cached keys.
 
-## Conclusion
+# Conclusion
 
 To recap: the user's input gets converted into token IDs, which get converted into a tensor of shape \([B, S, D]\). A transformer layer has an attention block which calculates \(Q\), \(K\), \(V\) matrices, applies the famous \(\operatorname{Attention} = \operatorname{softmax}\!\left(\frac{QK^{T}}{\sqrt{D}}\right)V\) equation, and then passes the result through an MLP. The process is repeated \(L\) times before a final linear produces a \([B, S, V_{\mathrm{vocab}}]\) tensor over the vocabulary.
 
@@ -376,6 +376,6 @@ Inference has two modes, prefill and decode. Prefill processes the entire prompt
 
 Obviously transformers have evolved since GPT-2, so feel free to email me at nsarka00@gmail.com if you have any questions or comments. I'm happy to discuss these topics or even other topics related to networking and LLMs with you!
 
-## Acknowledgements
+# Acknowledgements
 
 Thanks to my longtime friends Quentin Anthony and Jacob Hatef for reviewing and making suggestions for this post.
