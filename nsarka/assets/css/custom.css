@@ -1,0 +1,5 @@
+/* Hide decorative backticks while preserving inline code styling. */
+.prose :not(pre) > code::before,
+.prose :not(pre) > code::after {
+  content: none;
+}
