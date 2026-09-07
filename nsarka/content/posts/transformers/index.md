@@ -294,7 +294,7 @@ During inference there's two stages:
 
 ### Prefill
 
-Say you start a new chat completely fresh. On the first time you hit enter to send your prompt to the model, it has to compute the attention matrices using the full sequence length \(S\):
+Say you start a new chat completely fresh. On the first time you hit enter to send your prompt to the model, it computes the attention scores normally, i.e., across the full sequence length \(S\). That means every token gets compared to every other token. This is the same calculation as before:
 
 $$
 \begin{aligned}
@@ -311,30 +311,31 @@ K = x @ W_k [B, S, D]
 V = x @ W_v [B, S, D]
 ```
 
-When KV-caching is enabled, store \(K\) and \(V\) for later:
+But with KV-caching enabled, store \(K\) and \(V\) for later, since they'll be helpful in decode:
 
 ```python
 K_cached = K
 V_cached = V
 ```
 
-Run attention normally:
+Finish running attention normally:
 
 ```python
 softmax((Q @ K.T) / sqrt(D)) @ V [B, S, D]
 ```
 
-Then continue on, with each transformer layer storing its own KV-cache like this one. The first token gets printed to screen.
+Then continue on to the next transformer layer, with each one storing its own KV-cache like this one. The first token gets printed to screen by sampling the last \(S\)'s predicted probability distribution.
 
 ### Decode
 
-Since the model is *autoregressive*, each new token gets added to the context and the whole process repeats with it. However, the key insight behind KV-caching is that you only need to compute a single new row in the attention matrices:
+Since the model is *autoregressive*, each new token gets added to the context and the whole process repeats with it. Without KV-caching, the decode stage is actually the same as the prefill stage, with each autoregression working with a sequence length one token longer than the last.
+However, the key insight behind KV-caching is that it makes decode only require computing a single new row in the attention matrices.
 
-Here's the flow:
+Here's the flow. Instead of giving the whole sequence as an input, only the most recently generated token is given:
 
 $$
 \begin{aligned}
-\text{Input } x &\in [B, 1, D]\quad\text{Single new token input} \\
+\text{Input } x &\in [B, 1, D] \\
 \end{aligned}
 $$
 
