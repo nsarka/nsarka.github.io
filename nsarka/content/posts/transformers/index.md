@@ -203,7 +203,7 @@ Lastly, multiply by the \(V\) matrix and the result is back to shape \([B, S, D]
 sdpa_out = weights @ V # [B, S, D]
 ```
 
-Then, another linear is in the attention block:
+Then, another linear is in the attention block (not pictured in Figure 5):
 
 $$
 \begin{aligned}
