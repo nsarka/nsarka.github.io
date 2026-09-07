@@ -98,7 +98,7 @@ Here we have a direction for gender and a direction for royalty. The purple arro
 
 \(V_{\mathrm{vocab}}\) = "Vocabulary size", the number of different tokens there are.
 
-\(L\) = "Number of transformer layers" the model has, where each layer is a single decoder block.
+\(L\) = "Number of transformer layers" the model has, where each layer is one attention block & MLP block together.
 
 Each of these are called *hyper-parameters* because they are configured by the model designer. GPT-2 small had \(L = 12\), \(V_{\mathrm{vocab}} = 50257\), \(S_{\mathrm{max}} = 1024\), \(D = 768\).
 
@@ -132,11 +132,13 @@ Now, we have a tensor of shape \([B, S, D]\). Next is the position embedding \(P
 
 In GPT-2, the learned positional embedding table is \(P_{\mathrm{table}} \in [S_{\mathrm{max}}, D]\). Each row corresponds to a position. So `P_table[0, :]` corresponds to position 0, `P_table[1, :]` position 1, ..., then for getting \(P\) we can take the slice: `P = P_table[:S, :]`, i.e., skip everything after \(S\).
 
-This is helpful because the attention operation is a matrix multiply comparing every token to every other token without order, so to eventually capture that the dog is the one chasing in "the dog chased the cat", we have to encode that the dog is first in the sentence inside of the dog token itself.
+Adding position to the token is helpful because the attention operation is a matrix multiply comparing every token to every other token without order, so to eventually capture that the dog is the one chasing in "the dog chased the cat", we have to encode that the dog is first in the sentence inside of the dog token itself.
 
 ### Transformer Layer
 
-Now, we enter the transformer layer itself. The first operation is LayerNorm, but that doesn't change the shape so I won't go into detail about it here. Just know it's used to stabilize the training process.
+Now, we enter the transformer layer itself. The first operation is LayerNorm, but that doesn't change the shape so I won't go into detail about it here. Just know it's used to stabilize the training process. The transformer layer has two blocks--Attention and the Multi-Layer Perceptron (MLP). First is the attention block:
+
+#### Attention Block
 
 {{< figure
   src="Pasted image 20260905172032.png"
@@ -144,9 +146,9 @@ Now, we enter the transformer layer itself. The first operation is LayerNorm, bu
   caption=`Figure 5: Scaled Dot-Product Attention shape transformations. Operations are purple, given tensors are green.`
 >}}
 
-So, we have the input \(x \in [B, S, D]\).
+So, at the bottom we have the input \(x \in [B, S, D]\).
 
-The transformer layer attention block has three weight matrices, each of shape \([D, D]\)
+Going upwards, you can see the attention block has three weight matrices, each of shape \([D, D]\)
 
 $$
 \begin{aligned}
@@ -215,7 +217,9 @@ attn_out = sdpa_out @ W_o # [B, S, D]
 
 Dropout, Residual add, and another LayerNorm don't change the shape.
 
-Then, each transformer block has an MLP. It projects the hidden dimension up to \(4D\), then back down to \(D\), with an activation function in between:
+#### Multi-Layer Perceptron (MLP) Block
+
+Then, each transformer layer has an MLP. It projects the hidden dimension up to \(4D\), then back down to \(D\), with an activation function in between:
 
 $$
 \begin{aligned}
