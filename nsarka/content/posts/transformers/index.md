@@ -47,7 +47,7 @@ So, for the rest of this blog I will refer to their design instead of encoder-on
 
 ## The Complete Tensor Math of a Transformer
 
-There are a lot of tools like [this great visualizer](https://bbycroft.net/llm "https://bbycroft.net/llm"), but for me, it didn't click until I learned how to think in terms of shapes and operations abstractly. If you continue reading and still find it confusing: look up **broadcasts**, **reductions**, and **pointwise operations** and use numpy or pytorch to come up with a few examples.
+There are a lot of tools like [this great visualizer](https://bbycroft.net/llm "https://bbycroft.net/llm"), but for me, it didn't click until I learned how to think in terms of shapes and operations abstractly like in this post. If you continue reading and still find it confusing: look up **broadcasts**, **reductions**, and **pointwise operations** and use numpy or pytorch to come up with a few examples.
 
 For the rest of this post I'll walk through a GPT-2 style model because it's easy to digest, and because Karpathy's [minGPT](https://github.com/karpathy/minGPT) provides a very nice educational implementation that you can try immediately after reading this blog.
 
