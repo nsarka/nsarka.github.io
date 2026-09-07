@@ -321,7 +321,7 @@ V_cached = V
 Finish running attention normally:
 
 ```python
-softmax((Q @ K.T) / sqrt(D) + m) @ V [B, S, D]
+softmax((Q @ K.T) / sqrt(D) + m) @ V # [B, S, D]
 ```
 
 Then continue on to the next transformer layer, with each one storing its own KV-cache like this one. The first token gets printed to screen by sampling the last \(S\)'s predicted probability distribution.
@@ -355,10 +355,10 @@ V_cached = V_cached.append(V_new) # [B, S+1, D]
 Run attention, but this time using `K_cached` and `V_cached`:
 
 ```python
-weights = softmax((Q_new @ K_cached.T) / sqrt(D))
+weights = softmax((Q_new @ K_cached.T) / sqrt(D)) # [B, 1, S+1]
 ```
 
-The shapes before multiplying `V_cached` are \([B, 1, D] \mathbin{@} [B, D, S+1] = [B, 1, S+1]\). This tensor holds the attention weights of the input token over the previous tokens.
+The shapes for the above line are \([B, 1, D] \mathbin{@} [B, D, S+1] = [B, 1, S+1]\). The weights tensor holds the attention weights for *just* the input token over the previous tokens, versus the S+1 tokens all against each other.
 
 Multiply by `V_cached` to finish attention:
 
