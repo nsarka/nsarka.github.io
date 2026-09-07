@@ -264,9 +264,9 @@ Logits are the name for the raw scores of each potential token in the vocabulary
 **Note:** When using *embedding tying*, \(W_{\mathrm{vocab}}\) has the same weights as input embedding table: \(W_{\mathrm{vocab}} = E^{\mathsf{T}}\). This is done to save on parameter budget.
 {{< /alert >}}
 
-During inference, we just take the last \(S\): `[:, S-1:S, :]` (Python array slicing notation). This gives a \([B, 1, V_{\mathrm{vocab}}]\) tensor, one prediction for every batch. Softmax across the vocabulary, and this gives a probability distribution that the model can choose from. Temperature has its influence here: before the softmax, it can scale the logits so that model may choose less probable words more often.
+During inference, we just take the last \(S\): `[:, S-1:S, :]` (Python array slicing notation). This gives a \([B, 1, V_{\mathrm{vocab}}]\) tensor which has a single next-token prediction: a score (logit) for every token in the vocabulary. The final step is to softmax this tensor across the last dimension in order to convert the scores into a probability distribution that the model can sample from.
 
-During training we use all \(S\) positions. Because of causal masking, each logit predicts the next token in the sequence without being influenced by future tokens. From there we can compute the loss for every index and run backpropagation to update the model's weights.
+During training, however, all \(S\) positions are used. Because of causal masking, the logits at each position predict the next token in the sequence without being influenced by future tokens. From there we can compute the loss for every index and run backpropagation to update the model's weights.
 
 # Multi-Head Attention (MHA)
 
