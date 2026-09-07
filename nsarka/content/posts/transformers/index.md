@@ -321,7 +321,7 @@ V_cached = V
 Finish running attention normally:
 
 ```python
-softmax((Q @ K.T) / sqrt(D)) @ V [B, S, D]
+softmax((Q @ K.T) / sqrt(D) + m) @ V [B, S, D]
 ```
 
 Then continue on to the next transformer layer, with each one storing its own KV-cache like this one. The first token gets printed to screen by sampling the last \(S\)'s predicted probability distribution.
