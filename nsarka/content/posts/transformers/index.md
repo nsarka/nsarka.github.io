@@ -362,7 +362,7 @@ Run attention, but this time using `K_cached` and `V_cached`:
 weights = softmax((Q_new @ K_cached.T) / sqrt(D)) # [B, 1, S+1]
 ```
 
-The shapes for the above line are \([B, 1, D] \mathbin{@} [B, D, S+1] = [B, 1, S+1]\). The weights tensor holds the attention weights for *just* the input token over the previous tokens, versus the S+1 tokens all against each other.
+The shapes for the above line are \([B, 1, D] \mathbin{@} [B, D, S+1] = [B, 1, S+1]\). The weights tensor holds the attention weights for *just* the input token over the previous tokens, instead of the S+1 tokens all against each other.
 
 Multiply by `V_cached` to finish attention:
 
